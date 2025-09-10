@@ -121,7 +121,7 @@
                 .then(data => {
                     spinner.style.display = "none";
                     table.style.display = "table";
-                    const rows = data.values || [];
+                    let rows = data.values || [];
 
                     const allowedArtists = ["Por", "PTTP", "DEXX"];
                     rows = rows.filter(row => allowedArtists.includes(row[2])); 

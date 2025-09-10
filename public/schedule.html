@@ -66,7 +66,7 @@
             fetch(`/api/spreadsheets?range=${encodeURIComponent(range)}`)
                 .then(res => res.json())
                 .then(data => {
-                    const rows = data.values || [];
+                    let rows = data.values || [];
 
                     const allowedArtists = ["Por", "PTTP", "DEXX"];
                     rows = rows.filter(row => allowedArtists.includes(row[2])); 
