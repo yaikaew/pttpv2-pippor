@@ -116,16 +116,16 @@
             table.style.display = "none";
             grid.innerHTML = "";
             
-            fetch(`/api/schedule?range=${encodeURIComponent(range)}`)
+            fetch(`/api/spreadsheets?range=${encodeURIComponent(range)}`)
                 .then(res => res.json())
                 .then(data => {
                     spinner.style.display = "none";
                     table.style.display = "table";
-                    let rows = data.values || [];
+                    const rows = data.values || [];
 
                     const allowedArtists = ["Por", "PTTP", "DEXX"];
-                    rows = rows.filter(r => allowedArtists.includes(r[2]));
-
+                    rows = rows.filter(row => allowedArtists.includes(row[2])); 
+                    
                     grid.innerHTML = rows.map(row => {
                         const [date, time, artist, title, location, info, img, link, outfit, keyword, tag, note, keylink, taglink, dateformat] = row;
 

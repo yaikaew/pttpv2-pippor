@@ -70,10 +70,10 @@
 
     <script>
         function loadScheduleData(range, elementId) {
-            fetch(`/api/schedule?range=${encodeURIComponent(range)}`)
+            fetch(`/api/spreadsheets?range=${encodeURIComponent(range)}`)
             .then(res => res.json())
             .then(data => {
-                let rows = data.values || [];
+                const rows = data.values || [];
 
                 const allowedArtists = ["Por", "PTTP", "DEXX"];
                 rows = rows.filter(row => allowedArtists.includes(row[2])); 
@@ -121,157 +121,253 @@
             });
         }
 
-        loadScheduleData('upcoming!A2:N', 'scheduleGridUpcoming');
+        loadScheduleData('upcoming!A2:Z', 'scheduleGridUpcoming');
     </script>
 
     <!-- Discography Section -->
     <section class="discography" id="discography">
         <div class="discography__container">
             <h2 class="section__title">Discography</h2>
+            <div class="discography__grid" id="singleGrid"></div>
         </div>
-
-        <div class="tab-menu" id="tabMenu"></div>
-        <div class="tab-contents" id="tabContents"></div>
     </section>
 
     <script>
         function createDiscographyCard(row) {
-            const [type, artist, date, song, artist2, link, link2, img, streaming, note, channel, imgchannel] = row;
+            const [artist2, date, song, artist, link, img, formatdate] = row;
             return `
-            <div class="showcard" onclick="openLink('${link}')">
-                <div class="thumbnail">
-                    <img src="${img}" alt="video">
-                </div>
-                <div class="info">
-                    <img src="${imgchannel}" alt="channel">
-                    <div class="text">
-                        <p class="title">${song}</p>
-                        <p class="channel">${artist2} ${note ? ` • ${note}` : ''}</p>
-                    </div>
+            <div class="discography__card ${artist2}" onclick="openLink('${link}')">
+                <img src="${img}" alt="discography" />
+                <div class="discography__details">
+                    <p class="discography__title">${song}</p>
+                    <p class="discography__subtitle">${artist} <br/>${formatdate}</p>
                 </div>
             </div>
             `;
         }
 
         function loadDiscographyData(range) {
-            const tabMenu = document.getElementById("tabMenu");
-            const tabContents = document.getElementById("tabContents");
+            const container = document.getElementById("singleGrid");
+            container.innerHTML = `<div class="loading-spinner"></div>`;
 
-            tabMenu.innerHTML = `<div class="loading-spinner"></div>`;
-            tabContents.innerHTML = "";
-
-            fetch(`/api/schedule?range=${encodeURIComponent(range)}`)
+            fetch(`/api/spreadsheets?range=${encodeURIComponent(range)}`)
             .then(res => res.json())
             .then(data => {
                 let rows = data.values || [];
 
                 const allowedArtists = ["Por", "PTTP", "DEXX"];
-                rows = rows.filter(row => allowedArtists.includes(row[1])); 
+                rows = rows.filter(row => allowedArtists.includes(row[0])); 
 
                 if (rows.length === 0) {
-                    tabContents.innerHTML = "<p>No data available</p>";
+                    container.innerHTML = "<p>no data</p>";
                     return;
                 }
 
-                const types = [...new Set(rows.map(r => r[0]))]; 
-
-                tabMenu.innerHTML = types.map((type, idx) => 
-                    `<span class="tab-link ${idx===0?'active':''}" data-tab="${type}">${type}</span>`
-                ).join("");
-
-                tabContents.innerHTML = types.map((type, idx) => {
-                    const filtered = rows.filter(r => r[0] === type);
-                    return `
-                        <div id="${type}" class="tab-content ${idx===0?'active':''}">
-                            <div class="discography__grid">
-                                ${filtered.map(createDiscographyCard).join("")}
-                            </div>
-                        </div>`;
-                }).join("");
-
-                document.querySelectorAll(".tab-link").forEach(tab => {
-                    tab.addEventListener("click", () => {
-                        document.querySelectorAll(".tab-link").forEach(t => t.classList.remove("active"));
-                        document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-                        tab.classList.add("active");
-                        document.getElementById(tab.dataset.tab).classList.add("active");
-                    });
-                });
+                container.innerHTML = rows.map(createDiscographyCard).join("");
             })
             .catch(err => {
                 console.error(err);
-                tabContents.innerHTML = "<p>Error loading data</p>";
+                container.innerHTML = "<p>error fetch data</p>";
             });
         }
 
-        loadDiscographyData("discography!A2:L");
+        // โหลดข้อมูลครั้งเดียว
+        loadDiscographyData("discography!A2:Z");
     </script>
 
     <!-- Filmography Section -->
     <section class="film" id="filmography">
         <div class="film__container">
             <h2 class="section__title">Filmography</h2>
+        </div>
+        <div class="film-menu">
+            <span class="film-link active" data-tab="drama">Drama</span>
+            <span class="film-link" data-tab="variety">Variety</span>
+            <span class="film-link" data-tab="highlight">Highlight</span>
+        </div>
+        <div id="drama" class="film-content active">
             <div class="film__grid">
-                <div class="film__card">
-                    <img src="https://pbs.twimg.com/media/GcjdDQYaMAIjOfF?format=jpg&name=4096x4096" alt="film" onclick="openLink('https://youtube.com/playlist?list=PLcTibKbv20S4l3tuUU0ydM9BzZEc0nrLm')"/>
+                <div class="film__card" onclick="openLink('https://youtube.com/playlist?list=PLcTibKbv20S4l3tuUU0ydM9BzZEc0nrLm')">
+                    <img src="https://pbs.twimg.com/media/GcjdDQYaMAIjOfF?format=jpg&name=4096x4096" alt="film"/>
                     <div class="film__details">
                         <p class="film__title">กี่หมื่นฟ้า Your Sky Series</p>
-                        <div class="film__role">ป๋อ รับบท พันลี้ <i class="ri-star-fill"></i> ตี๋ตี๋ รับบท ใกล้ใจ <br/> Punlee by Por <i class="ri-star-fill"></i> Glaijai by TeeTee</div>
+                        <div class="film__role">
+                            Por as Punlee - Sasin Phisut <br/>TeeTee as Ghlaijai - Ghlaijai Burirat
+                        </div>
                         <div class="film__info">
-                            <div class="status"><span>Year</span> 2025</div>
-                            <div class="film_rerun">
-                                <a href="http://s.iq.com/cvgpz" target="_blank" rel="noopener noreferrer">
-                                    <button class="rerun">iQIYI</button>
-                                </a>
-                                <a href="https://youtube.com/playlist?list=PLcTibKbv20S4l3tuUU0ydM9BzZEc0nrLm" target="_blank" rel="noopener noreferrer">
-                                    <button class="rerun">YouTube</button>
-                                </a>
-                            </div>
+                            Network: one31 <br/>
+                            Episodes: 6 <br/>
+                            Released: 17 Nov 2024 - 2 Feb 2025
                         </div>
                     </div>
                 </div>
-                <div class="film__card">
-                    <img src="https://pbs.twimg.com/media/GmZg7Lhb0AAYn69?format=jpg&name=medium" alt="film" onclick="openLink('http://s.iq.com/YourSkyOfUs')"/>
+                <div class="film__card" onclick="openLink('http://s.iq.com/YourSkyOfUs')">
+                    <img src="https://pbs.twimg.com/media/GmZg7Lhb0AAYn69?format=jpg&name=medium" alt="film" />
                     <div class="film__details">
                         <p class="film__title">กี่หมื่นฟ้า Your Sky Of Us</p>
-                        <div class="film__role">ป๋อ รับบท พันลี้ <i class="ri-star-fill"></i> ตี๋ตี๋ รับบท ใกล้ใจ <br/> Punlee by Por <i class="ri-star-fill"></i> Glaijai by TeeTee</div>
+                        <div class="film__role">
+                            Por as Punlee - Sasin Phisut <br/>TeeTee as Ghlaijai - Ghlaijai Burirat
+                        </div>
                         <div class="film__info">
-                            <div class="status"><span>Year</span> 2025</div>
-                            <div class="film_rerun">
-                                <a href="http://s.iq.com/YourSkyOfUs" target="_blank" rel="noopener noreferrer">
-                                    <button class="rerun">iQIYI</button>
-                                </a>
-                            </div>
+                            Network: one31 <br/>
+                            Episodes: 3 <br/>
+                            Released: 29 Mar 2025 - 19 Apr 2025
                         </div>
                     </div>
                 </div>
-                <div class="film__card">
-                    <img src="https://pbs.twimg.com/media/GkPQY-oa0AAZaIa?format=jpg&name=4096x4096" alt="film" onclick="openLink('https://youtu.be/G7ExYljjGoo')"/>
+                <div class="film__card" onclick="openLink('https://youtu.be/G7ExYljjGoo')">
+                    <img src="https://pbs.twimg.com/media/GkPQY-oa0AAZaIa?format=jpg&name=4096x4096" alt="film" />
                     <div class="film__details">
                         <p class="film__title">ด้วงกับเธอ Duang With You Series</p>
-                        <div class="film__role">ตี๋ตี๋ รับบท ด้วง <i class="ri-star-fill"></i> ป๋อ รับบท ฉิน <br/> Duang by TeeTee <i class="ri-star-fill"></i> Qin by Por</div>
-                        <div class="film__info">
-                            <div class="status"><span>Coming Soon</span> </div>
-                            <div class="film_rerun">
-                                <a href="https://youtu.be/G7ExYljjGoo" target="_blank" rel="noopener noreferrer">
-                                    <button class="rerun">PILOT</button>
-                                </a>
-                            </div>
-                        </div>
+                        <div class="film__role">TeeTee as Duang <br/>Por as Qin</div>
+                        <!-- <div class="film__info">
+                            Network: one31 <br/>
+                            Episodes: 6 <br/>
+                            Released: 6 Oct 2024 - 10 Nov 2024
+                        </div> -->
                     </div>
                 </div>
-                <div class="film__card">
-                    <img src="https://pbs.twimg.com/media/GkPmh--WgAAapoX?format=jpg&name=4096x4096" alt="film" onclick="openLink('https://x.com/DomundiTV/status/1892609941485346900')"/>
+                <div class="film__card" onclick="openLink('https://x.com/DomundiTV/status/1892609941485346900')">
+                    <img src="https://pbs.twimg.com/media/GkPmh--WgAAapoX?format=jpg&name=4096x4096" alt="film" />
                     <div class="film__details">
                         <p class="film__title">DMD SITCOM หอตัวดี</p>
                         <div class="film__role">#หอตัวดี</div>
+                        <!-- <div class="film__info">
+                            Network: one31 <br/>
+                            Episodes: 6 <br/>
+                            Released: 6 Oct 2024 - 10 Nov 2024
+                        </div> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="variety" class="film-content">
+            <div class="film__grid">
+                <div class="film__card" onclick="openLink('https://youtube.com/playlist?list=PLXopbKxiivxplPcVzsZdHTLX3KVnRac2i')">
+                    <img src="https://pbs.twimg.com/media/E_d1P8zVQAEao_x?format=jpg&name=large" alt="film"/>
+                    <div class="film__details">
+                        <p class="film__title">LAZ iCON</p>
                         <div class="film__info">
-                            <div class="status"><span>Coming Soon</span> </div>
-                            <div class="film_rerun">
-                                <a href="https://x.com/DomundiTV/status/1892609941485346900" target="_blank" rel="noopener noreferrer">
-                                    <button class="rerun">info</button>
-                                </a>
-                            </div>
+                            Network: one31 <br/>
+                            Episodes: 12 <br/>
+                            Released: 9 Oct 2021 - 9 Jan 2022
+                        </div>
+                    </div>
+                </div>
+                <div class="film__card" onclick="openLink('https://youtube.com/playlist?list=PLcTibKbv20S6OAFQhavL9A18LrfI0dQ_q')">
+                    <img src="https://pbs.twimg.com/media/GYj-_U5aAAAUEyi?format=jpg&name=4096x4096" alt="film"/>
+                    <div class="film__details">
+                        <p class="film__title">DMD Friendship the Reality | It Takes Two</p>
+                        <div class="film__info">
+                            Network: one31 <br/>
+                            Episodes: 6 <br/>
+                            Released: 6 Oct 2024 - 10 Nov 2024
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="highlight" class="film-content">
+            <div class="film__grid">
+                <div class="showcard" onclick="openLink('https://youtu.be/bVymmCEqTPo')">
+                    <div class="thumbnail">
+                        <img src="https://img.youtube.com/vi/bVymmCEqTPo/maxresdefault.jpg" alt="video">
+                        <span class="badge">2:39</span>
+                    </div>
+                    <div class="info">
+                        <img src="https://yt3.ggpht.com/1Hap5B_PUhODOLV9flBm73OomNRdzMQh0VXjUP2DpeK7Pwl2p2A6ulRoihbh2ajyaF-7fGO1lw=s88-c-k-c0x00ffffff-no-rj" alt="channel">
+                        <div class="text">
+                            <p class="title">Highlight กี่หมื่นฟ้า Your Sky Series EP.4 | อยู่ได้ยาวๆ เลยใช่มั้ย</p>
+                            <p class="channel">Mandee Channel • 11 Dec 2024</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="showcard" onclick="openLink('https://youtu.be/c8plc4DUe-8')">
+                    <div class="thumbnail">
+                        <img src="https://img.youtube.com/vi/c8plc4DUe-8/maxresdefault.jpg" alt="video">
+                        <span class="badge">5:00</span>
+                    </div>
+                    <div class="info">
+                        <img src="https://yt3.ggpht.com/1Hap5B_PUhODOLV9flBm73OomNRdzMQh0VXjUP2DpeK7Pwl2p2A6ulRoihbh2ajyaF-7fGO1lw=s88-c-k-c0x00ffffff-no-rj" alt="channel">
+                        <div class="text">
+                            <p class="title">Highlight กี่หมื่นฟ้า Your Sky Series EP.8 | เห็นมั้ย ใกล้แล้ว</p>
+                            <p class="channel">Mandee Channel • 06 Jan 2025</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="showcard" onclick="openLink('https://youtu.be/Fg0E9qsFNyo')">
+                    <div class="thumbnail">
+                        <img src="https://img.youtube.com/vi/Fg0E9qsFNyo/maxresdefault.jpg" alt="video">
+                        <span class="badge">2:35</span>
+                    </div>
+                    <div class="info">
+                        <img src="https://yt3.ggpht.com/1Hap5B_PUhODOLV9flBm73OomNRdzMQh0VXjUP2DpeK7Pwl2p2A6ulRoihbh2ajyaF-7fGO1lw=s88-c-k-c0x00ffffff-no-rj" alt="channel">
+                        <div class="text">
+                            <p class="title">Highlight กี่หมื่นฟ้า Your Sky Series EP.10 | ลองทำในสิ่งที่ลี้ชอบมั้ย?</p>
+                            <p class="channel">Mandee Channel • 19 Jan 2025</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="showcard" onclick="openLink('https://youtu.be/Lxm0VOZ7b1k')">
+                    <div class="thumbnail">
+                        <img src="https://img.youtube.com/vi/Lxm0VOZ7b1k/maxresdefault.jpg" alt="video">
+                        <span class="badge">3:35</span>
+                    </div>
+                    <div class="info">
+                        <img src="https://yt3.ggpht.com/1Hap5B_PUhODOLV9flBm73OomNRdzMQh0VXjUP2DpeK7Pwl2p2A6ulRoihbh2ajyaF-7fGO1lw=s88-c-k-c0x00ffffff-no-rj" alt="channel">
+                        <div class="text">
+                            <p class="title">Highlight กี่หมื่นฟ้า Your Sky Series EP.10 | สองคนนี้ไปสนิทตอนไหน?</p>
+                            <p class="channel">Mandee Channel • 20 Jan 2025</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="showcard" onclick="openLink('https://youtu.be/_P0reI4RiFI')">
+                    <div class="thumbnail">
+                        <img src="https://img.youtube.com/vi/_P0reI4RiFI/maxresdefault.jpg" alt="video">
+                        <span class="badge">2:59</span>
+                    </div>
+                    <div class="info">
+                        <img src="https://yt3.ggpht.com/1Hap5B_PUhODOLV9flBm73OomNRdzMQh0VXjUP2DpeK7Pwl2p2A6ulRoihbh2ajyaF-7fGO1lw=s88-c-k-c0x00ffffff-no-rj" alt="channel">
+                        <div class="text">
+                            <p class="title">Highlight กี่หมื่นฟ้า Your Sky Series EP.11 | เราสนิทกันแล้ว ให้ลี้ไปส่งนะ</p>
+                            <p class="channel">Mandee Channel • 26 Jan 2025</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="showcard" onclick="openLink('https://youtu.be/y09t0scU9xw')">
+                    <div class="thumbnail">
+                        <img src="https://img.youtube.com/vi/y09t0scU9xw/maxresdefault.jpg" alt="video">
+                        <span class="badge">2:12</span>
+                    </div>
+                    <div class="info">
+                        <img src="https://yt3.ggpht.com/1Hap5B_PUhODOLV9flBm73OomNRdzMQh0VXjUP2DpeK7Pwl2p2A6ulRoihbh2ajyaF-7fGO1lw=s88-c-k-c0x00ffffff-no-rj" alt="channel">
+                        <div class="text">
+                            <p class="title">Highlight กี่หมื่นฟ้า Your Sky Series EP.12 | ลี้ว่าเราแค่ใจตรงกัน</p>
+                            <p class="channel">Mandee Channel • 03 Feb 2025</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="showcard" onclick="openLink('https://youtu.be/09b3ATUheCQ')">
+                    <div class="thumbnail">
+                        <img src="https://img.youtube.com/vi/09b3ATUheCQ/maxresdefault.jpg" alt="video">
+                        <span class="badge">4:58</span>
+                    </div>
+                    <div class="info">
+                        <img src="https://yt3.ggpht.com/1Hap5B_PUhODOLV9flBm73OomNRdzMQh0VXjUP2DpeK7Pwl2p2A6ulRoihbh2ajyaF-7fGO1lw=s88-c-k-c0x00ffffff-no-rj" alt="channel">
+                        <div class="text">
+                            <p class="title">Highlight กี่หมื่นฟ้า Your Sky of Us EP. 2 | เราเปลี่ยนสถานะจากเพื่อนเป็นคนคุยแล้วนะ</p>
+                            <p class="channel">Mandee Channel • 05 Apr 2025</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="showcard" onclick="openLink('https://youtu.be/tNiMizDq3yo')">
+                    <div class="thumbnail"><img src="https://img.youtube.com/vi/tNiMizDq3yo/maxresdefault.jpg" alt="video"><span
+                            class="badge">1:16</span></div>
+                    <div class="info">
+                        <img src="https://yt3.ggpht.com/1Hap5B_PUhODOLV9flBm73OomNRdzMQh0VXjUP2DpeK7Pwl2p2A6ulRoihbh2ajyaF-7fGO1lw=s88-c-k-c0x00ffffff-no-rj" alt="channel">
+                        <div class="text">
+                            <p class="title">Highlight กี่หมื่นฟ้า Your Sky of Us EP.3 | จับได้เลยนะ...เราอนุญาต</p>
+                            <p class="channel">Mandee Channel • 19 Apr 2025</p>
                         </div>
                     </div>
                 </div>
@@ -295,7 +391,7 @@
             
             grid.innerHTML = '<div class="loading-spinner"></div>';
 
-            fetch(`/api/schedule?range=${encodeURIComponent(range)}`)
+            fetch(`/api/spreadsheets?range=${encodeURIComponent(range)}`)
             .then(res => {
                 if (!res.ok) {
                     throw new Error('Network response was not ok');
@@ -307,6 +403,11 @@
 
                 const allowedArtists = ["Por", "PTTP", "DEXX"];
                 rows = rows.filter(row => allowedArtists.includes(row[0])); 
+
+                if (rows.length === 0) {
+                    grid.innerHTML = '<p>No data available</p>';
+                    return;
+                }
 
                 grid.innerHTML = rows.map(row => {
                     const [artist, date, brand, link, dmd, img] = row;
@@ -326,7 +427,7 @@
                 grid.innerHTML = '<p>Error loading data</p>';
             });
         }
-        loadPresenterData('presenter!A2:H', 'presenterGrid');
+        loadPresenterData('presenter!A2:Z', 'presenterGrid');
     </script>
 
     <!-- Awards Section -->
@@ -345,7 +446,7 @@
             
             grid.innerHTML = '<div class="loading-spinner"></div>';
 
-            fetch(`/api/schedule?range=${encodeURIComponent(range)}`)
+            fetch(`/api/spreadsheets?range=${encodeURIComponent(range)}`)
             .then(res => {
                 if (!res.ok) {
                     throw new Error('Network response was not ok');
@@ -362,9 +463,9 @@
                     const [artist, date, award, category, result, link, note, img] = row;
 
                     let resultHTML = '';
-                    if (result === 'ได้รับรางวัล') {
+                    if (result === 'Received') {
                         resultHTML = `<p class="awards__result received">${result}</p>`;
-                    } else if (result === 'เสนอชื่อเข้าชิง') {
+                    } else if (result === 'Nominated') {
                         resultHTML = `<p class="awards__result nominated">${result}</p>`;
                     } else {
                         resultHTML = `<p class="awards__result">${result}</p>`;
@@ -384,10 +485,10 @@
             })
             .catch(error => {
                 console.error('There has been a problem with your fetch operation:', error);
-                grid.innerHTML = '<p>Error loading data</p>';
+                grid.innerHTML = '<p>เกิดข้อผิดพลาดในการโหลดข้อมูล</p>';
             });
         }
-        loadAwardsData('awards!A2:H', 'awardsGrid');
+        loadAwardsData('awards!A2:Z', 'awardsGrid');
     </script>
 
     <!-- Shows Section -->
@@ -404,19 +505,19 @@
         function createShowCard(row) {
             const [type, artist, date, title, link, id, thumbnail, channel, imgchannel, duration] = row;
             return `
-                <div class="showcard" onclick="openLink('${link}')">
-                    <div class="thumbnail">
-                        <img src="${thumbnail}" alt="video">
-                        <span class="badge">${duration}</span>
-                    </div>
-                    <div class="info">
-                        <img src="${imgchannel}" alt="channel">
-                        <div class="text">
-                            <p class="title">${title}</p>
-                            <p class="channel">${channel} • ${date}</p>
-                        </div>
+            <div class="showcard" onclick="openLink('${link}')">
+                <div class="thumbnail">
+                    <img src="${thumbnail}" alt="video">
+                    <span class="badge">${duration}</span>
+                </div>
+                <div class="info">
+                    <img src="${imgchannel}" alt="channel">
+                    <div class="text">
+                        <p class="title">${title}</p>
+                        <p class="channel">${channel} • ${date}</p>
                     </div>
                 </div>
+            </div>
             `;
         }
 
@@ -427,16 +528,17 @@
             tabMenu2.innerHTML = `<div class="loading-spinner"></div>`;
             tabContents2.innerHTML = "";
 
-            fetch(`/api/schedule?range=${encodeURIComponent(range)}`)
+            fetch(`/api/spreadsheets?range=${encodeURIComponent(range)}`)
             .then(res => res.json())
             .then(data => {
                 let rows = data.values || [];
 
                 const allowedArtists = ["Por", "PTTP", "DEXX"];
-                rows = rows.filter(r => allowedArtists.includes(r[1]));
+                rows = rows.filter(row => allowedArtists.includes(row[1])); 
 
                 if (rows.length === 0) {
-                    tabContents2.innerHTML = "<p>No data available</p>";
+                    tabContents2.innerHTML = `<p>No data available</p>`;
+                    tabMenu2.innerHTML = "";
                     return;
                 }
 
@@ -453,8 +555,7 @@
                             <div class="shows__grid">
                                 ${filtered.map(createShowCard).join("")}
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 }).join("");
 
                 document.querySelectorAll(".tab-link-2").forEach(tab => {
@@ -468,11 +569,11 @@
             })
             .catch(err => {
                 console.error(err);
-                tabContents2.innerHTML = "<p>Error loading data</p>";
+                tabContents2.innerHTML = `<p>Error loading data</p>`;
             });
         }
 
-        loadShowsData("shows!A2:J");
+        loadShowsData("shows!A2:Z");
     </script>
 
     <footer class="footer">
